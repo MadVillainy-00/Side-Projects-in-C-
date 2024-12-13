@@ -1,0 +1,110 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <ctime>
+
+using namespace std;
+
+class BlackjackGame {
+    vector<int> deck;
+    vector<int> dealerHand;
+    vector<int> playerHand;
+
+    void initializeDeck() {
+        deck.clear();
+        for (int i = 1; i <= 13; ++i) {
+            for (int j = 0; j < 4; ++j) deck.push_back(min(i, 10));
+        }
+        shuffle(deck.begin(), deck.end(), mt19937(static_cast<unsigned>(time(nullptr))));
+    }
+
+    int calculateHand(const vector<int>& hand) {
+        int sum = 0, aces = 0;
+        for (int card : hand) {
+            sum += card;
+            if (card == 1) ++aces;
+        }
+        while (aces > 0 && sum + 10 <= 21) {
+            sum += 10;
+            --aces;
+        }
+        return sum;
+    }
+
+    void displayHand(const string& name, const vector<int>& hand) {
+        cout << name << "'s hand: ";
+        for (int card : hand) cout << card << " ";
+        cout << "| Total: " << calculateHand(hand) << endl;
+    }
+
+public:
+    void playRound() {
+        initializeDeck();
+
+        // Deal initial cards
+        playerHand = {deck.back()}; deck.pop_back();
+        dealerHand = {deck.back()}; deck.pop_back();
+        playerHand.push_back(deck.back()); deck.pop_back();
+        dealerHand.push_back(deck.back()); deck.pop_back();
+
+        displayHand("Player", playerHand);
+        displayHand("Dealer", vector<int>{dealerHand[0]}); // Show only one dealer card
+
+        // Player's turn
+        string choice;
+        while (true) {
+            cout << "Hit or Stand? ";
+            cin >> choice;
+            if (choice == "Stand" || choice == "stand") break;
+            if (choice == "Hit" || choice == "hit") {
+                playerHand.push_back(deck.back());
+                deck.pop_back();
+                displayHand("Player", playerHand);
+                if (calculateHand(playerHand) > 21) {
+                    cout << "Player busts!\n";
+                    cout << "Would you like to try again?\n";
+                    return;
+                }
+            }
+        }
+
+        // Dealer's turn
+        cout << "Dealer's turn:\n";
+        while (calculateHand(dealerHand) < 17) {
+            dealerHand.push_back(deck.back());
+            deck.pop_back();
+            cout << "Dealer draws: " << dealerHand.back() << "\n";
+        }
+
+        displayHand("Dealer", dealerHand);
+
+        // Determine winner
+        int playerTotal = calculateHand(playerHand);
+        int dealerTotal = calculateHand(dealerHand);
+
+        if (dealerTotal > 21 || playerTotal > dealerTotal) {
+            cout << "Player wins!\n";
+            cout << "Congratulations, Player!\n";
+        } else if (playerTotal < dealerTotal) {
+            cout << "Dealer wins!\n";
+            cout << "Would you like to try again?\n";
+        } else {
+            cout << "It's a tie!\n";
+        }
+    }
+};
+
+int main() {
+    BlackjackGame game;
+    string userInput;
+
+    do {
+        game.playRound();
+        cout << "Type 'i am out' to quit or press Enter to play again: ";
+        getline(cin >> ws, userInput);
+    } while (userInput != "i am out");
+
+    cout << "Thanks for playing!\n";
+    return 0;
+}
